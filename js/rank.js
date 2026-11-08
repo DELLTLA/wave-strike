@@ -65,6 +65,13 @@ export async function initRank(){
   catch(e){ if(/401|เซสชัน|หมดอายุ/.test(e.message)){ clearSession(); } }
 }
 
+let giftFn=null; export function setGiftHandler(f){ giftFn=f; }
+export async function redeemGift(code){
+  code=String(code||'').trim(); if(code.length<4) throw new Error('กรุณาใส่โค้ดให้ครบ');
+  if(!state.token) throw new Error('ต้องเข้าสู่ระบบก่อน (เมนูหลัก → 🔑 ปลดล็อคยศ → สมัคร/เข้าสู่ระบบ)');
+  const j = await api('/api/redeem-gift', { code }); return giftFn?giftFn(j):'รับของสำเร็จ';
+}
+
 /* ---- หน้าต่าง ---- */
 let root=null, mode='login', msg='', msgOk=false, focusRank='gunner';
 function el(h){ const d=document.createElement('div'); d.innerHTML=h; return d.firstElementChild; }
@@ -91,6 +98,7 @@ function paint(){
   } else {
     h += `<div class="rkBox rkMe">👤 <b>${esc(state.user)}</b> · ยศ <b style="color:${cur.color}">${cur.name}</b> <button class="mbtn sm" data-a="logout">ออกจากระบบ</button></div>`;
   }
+  if(logged) h += `<div class="rkBox"><b>🎁 รหัสแจกของ</b><div class="rkHint">ใส่รหัสที่ได้จากแอดมิน เพื่อรับเงิน/สกินปืน</div><input id="rkG" maxlength="24" placeholder="รหัสแจกของ" style="text-transform:uppercase" autocomplete="off"><button class="mbtn sm" data-a="gift">รับของ</button></div>`;
   h += `<div class="rkCards">` + RANK_ORDER.map(id=>{ const r=RANKS[id], mine=state.rank===id, below=r.lv<cur.lv;
     const act = id==='tester' ? `<div class="rkTag">${mine?'ยศปัจจุบัน':'ยศเริ่มต้น'}</div>`
       : mine ? `<div class="rkTag ok">ยศปัจจุบัน ✔</div>`
@@ -115,6 +123,10 @@ async function onClick(e){
       const j = await api(a==='login'?'/api/login':'/api/register', { username:v('rkU').trim(), password:v('rkP') });
       msg = a==='login'?'เข้าสู่ระบบสำเร็จ':'สมัครบัญชีสำเร็จ'; msgOk=true; setSession(j);
     } else if(a==='logout'){ try{ await api('/api/logout',{}); }catch(e){} clearSession(); msg='ออกจากระบบแล้ว'; msgOk=true; paint(); }
+    else if(a==='gift'){
+      const code = v('rkG').trim(); if(code.length<4) throw new Error('กรุณาใส่รหัสแจกของ');
+      const j = await api('/api/redeem-gift', { code }); msg = giftFn?giftFn(j):'รับของสำเร็จ'; msgOk=true; paint();
+    }
     else if(a==='redeem'){
       const inp = root.querySelector(`.rkCode[data-r="${b.dataset.r}"]`), code = (inp&&inp.value||'').replace(/\D/g,'');
       if(code.length!==8) throw new Error('กรุณาใส่รหัส 8 หลัก');
