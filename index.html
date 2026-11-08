@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>NEON STRIKE: Rain City</title>
+<link rel="stylesheet" href="css/style.css">
+<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+
+<div id="hud">
+  <div id="hpWrap"><span>HP</span><div id="hpBar"><div id="hpFill"></div></div><span id="hpText">100</span></div>
+  <div id="lvWrap"><span id="lvT">LV 1</span><div id="xpBar"><div id="xpFill"></div></div></div>
+  <div id="topC"><div id="waveT">WAVE 1</div><div id="scoreT">0</div><div id="enemT">ศัตรู: 0</div><div id="goldT">🪙 0</div></div>
+  <div id="ammoWrap"><span id="ammo">30</span><span id="ammoMax">/30</span><div id="reloadT">กำลังรีโหลด...</div><div id="wName"></div><div id="mechT"></div></div>
+  <button id="pauseBtn">II</button>
+  <div id="scope"><i></i><i></i><b></b></div>
+  <div id="cross"><i></i><i></i><i></i><i></i><b></b></div>
+  <div id="chg"></div>
+  <div id="hitm"><i></i><i></i><i></i><i></i></div>
+  <div id="banner"></div>
+  <div id="combo"></div>
+  <div id="vig"></div>
+  <div id="dmgdir"></div>
+  <div id="lowhp"></div>
+  <div id="clickHint">คลิกที่จอเพื่อควบคุม</div>
+  <div id="loading"><i></i><div>กำลังโหลด...</div></div>
+  <div id="qHint"><span id="qHintT"></span><button id="qHintYes">ลดคุณภาพ</button><button class="no" id="qHintNo">ไม่ต้อง</button></div>
+  <div id="fps"></div>
+  <div id="skbar"></div>
+</div>
+
+<div id="look"></div>
+<div id="controls">
+  <div class="ctl" id="c_joy"><div id="knob"></div></div>
+  <div class="ctl" id="c_fire">ยิง</div>
+  <div class="ctl" id="c_aim">เล็ง</div>
+  <div class="ctl" id="c_jump">กระโดด</div>
+  <div class="ctl" id="c_reload">รีโหลด</div>
+  <div class="ctl" id="c_sprint">วิ่ง</div>
+  <div class="ctl" id="c_swap">สลับ</div>
+  <div class="ctl" id="c_fm" style="display:none">โหมด</div>
+  <div class="ctl" id="c_sk1">พุ่ง</div>
+  <div class="ctl" id="c_sk2">คลื่น</div>
+  <div class="ctl" id="c_sk3">ชะลอ</div>
+  <div class="ctl" id="c_sk4">เร่ง</div>
+  <div class="ctl" id="c_sk5">โล่</div>
+  <div class="ctl" id="c_inspect">ควง</div>
+  <div class="ctl" id="c_qmelee">ตีด่วน</div>
+  <div class="ctl" id="c_slide">สไลด์</div>
+</div>
+
+<div class="screen show" id="menuScr">
+  <h1 class="title">NEON STRIKE</h1>
+  <div class="sub" id="menuSub">R A I N &nbsp; C I T Y</div>
+  <div id="menuMapTh" style="font-size:13px;opacity:.8;margin:-14px 0 14px;text-align:center"></div>
+  <div style="opacity:.5;font-size:12px;letter-spacing:2px;margin-top:-6px">V7.1</div>
+  <button class="mbtn primary" id="bStart">เริ่มเกม</button>
+  <button class="mbtn" id="bSet1">ตั้งค่า ภาพ / แสง / เสียง</button>
+  <button class="mbtn" id="bEdit1">ปรับแต่งปุ่ม UI</button>
+  <button class="mbtn" id="bGacha">🎁 สุ่มสกิน (25 🪙)</button>
+  <button class="mbtn" id="bInv">🎨 คลังสกิน</button>
+  <button class="mbtn" id="bUnlock">🔑 ปลดล็อคยศ</button>
+  <div class="best" id="bestT"></div>
+  <div class="best" id="goldMenu"></div>
+  <div class="help">
+    <b>คีย์บอร์ด:</b> WASD เดิน · คลิกซ้าย ยิง/ฟัน · คลิกขวา ส่องศูนย์ · <b>1</b> ปืนหลัก · <b>2</b> ปืนพก · <b>3</b> มีด · <b>Q</b> สลับด่วน · Shift วิ่ง · Space กระโดด (กดซ้ำกลางอากาศ = กระโดดคู่) · <b>X</b> สไลด์ (กลางอากาศ = กระแทกพื้น) · R รีโหลด · <b>G</b> ควงอาวุธ · <b>T</b> หรือปุ่มข้างเมาส์ ตีด่วน ·  <b>N</b> สลับโหมดยิง · Esc หยุด<br>
+    <b>สกิล:</b> <b>E</b> พุ่ง · <b>F</b> คลื่นกระแทก · <b>C</b> ชะลอเวลา · <b>V</b> โอเวอร์ชาร์จ · <b>B</b> บาเรีย<br>
+    <b>มือถือ/แท็บเล็ต:</b> จอยซ้ายเดิน (ฝั่งซ้ายของจอไม่หมุนมุมมอง) · ปัดจอฝั่งขวาเพื่อหัน · กดปุ่มยิงค้างแล้วลากเพื่อเล็งได้<br>
+    ยิงที่ <b>ตาเรืองแสง</b> ของศัตรูเพื่อสร้างดาเมจ x2 · เก็บลูกแก้วสีเขียวเพื่อเพิ่มเลือด<br>ฆ่าศัตรูเพื่อรับ <b>XP</b> → เลเวลอัป → เลือกอัปเกรด <b>พลังยิง</b> และอื่นๆ · เลือกปืนและอาวุธสั้น 5 ชนิดก่อนเริ่มเกม · ฆ่าศัตรูได้ 🪙 ทอง เอาไว้สุ่มสกินปืน
+  </div>
+  <div class="portrait">แนะนำให้หมุนจอเป็นแนวนอน</div>
+</div>
+
+<div class="screen" id="pauseScr">
+  <h1 class="title" style="font-size:52px">PAUSED</h1>
+  <div class="sub">หยุดชั่วคราว</div>
+  <button class="mbtn primary" id="bResume">เล่นต่อ</button>
+  <button class="mbtn" id="bSet2">ตั้งค่า</button>
+  <button class="mbtn" id="bEdit2">ปรับแต่งปุ่ม UI</button>
+  <button class="mbtn" id="bQuit">ออกไปเมนู</button>
+</div>
+
+<div class="screen" id="overScr">
+  <h1 class="title" style="font-size:56px">GAME OVER</h1>
+  <div class="sub">คุณถูกกำจัด</div>
+  <div class="stats" id="overStats"></div>
+  <button class="mbtn primary" id="bRetry">เล่นอีกครั้ง (ปืนเดิม)</button>
+  <button class="mbtn" id="bRetryW">เลือกอาวุธใหม่</button>
+  <button class="mbtn" id="bQuit2">ออกไปเมนู</button>
+</div>
+
+<div class="screen scr2" id="mapScr"><div class="wrap">
+  <h1 class="title" style="font-size:clamp(30px,6vw,52px)">เลือกแมพ</h1>
+  <div class="sub">เลือกสนามรบก่อนเริ่มภารกิจ</div>
+  <div class="cards" id="mapCards"></div>
+  <div class="sub" style="margin-top:6px">ระดับความยาก</div>
+  <div class="invBar" id="diffBar"></div>
+  <div id="diffDesc" style="font-size:13px;margin-bottom:8px"></div>
+  <div><button class="mbtn primary" id="bMapGo">ต่อไป: เลือกอาวุธ</button><button class="mbtn" id="bMapBack" style="min-width:120px">กลับ</button></div>
+</div></div>
+
+<div class="screen scr2" id="wpnScr"><div class="wrap">
+  <h1 class="title" style="font-size:clamp(30px,6vw,52px)">เลือกอาวุธ</h1>
+  <div class="sub">เลือกปืนหลัก ปืนพก และอาวุธประชิดก่อนเริ่มภารกิจ</div>
+  <div class="tabs" id="wMode"></div>
+  <div class="tabs hs" id="wTabs"></div>
+  <div class="cards scroll" id="wCards"></div>
+  <div class="sub" style="margin:10px 0 0">เลือกอาวุธระยะประชิด (ช่อง 3 — กด 3 / Q / ปุ่มสลับ ระหว่างเล่น)</div>
+  <div class="cards" id="mCards"></div>
+  <div><button class="mbtn primary" id="bGo">เริ่มภารกิจ</button><button class="mbtn" id="bWBack" style="min-width:120px">กลับ</button></div>
+</div></div>
+
+<div class="screen scr2" id="upScr"><div class="wrap">
+  <h1 class="title" style="font-size:clamp(32px,7vw,58px)">LEVEL UP!</h1>
+  <div class="sub" id="upSub"></div>
+  <div class="cards" id="uCards"></div>
+</div></div>
+
+<div class="screen" id="skinScr">
+  <div class="panel" style="text-align:center">
+    <h2>ร้านสุ่มสกิน</h2>
+    <div id="gGold" style="color:#ffd166;font-weight:800;margin-bottom:8px"></div>
+    <div id="reel">???</div>
+    <div id="rollRes"></div>
+    <button class="mbtn primary" id="bRoll">สุ่มสกิน 25 🪙</button>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px">
+      <button class="mbtn" id="bInv2" style="min-width:150px">คลังสกิน</button>
+      <button class="mbtn" id="bGB" style="min-width:110px">กลับ</button>
+    </div>
+    <div id="pityT" style="margin-top:8px;color:#7fe9ff;font-size:13px"></div>
+    <div class="help">อัตราสุ่ม: ทั่วไป 60% · หายาก 28% · มหาหายาก 10% · ตำนาน 2%<br>สกินซ้ำได้ทองคืน: ทั่วไป 5 · หายาก 10 · มหาหายาก 15 · ตำนาน 25 🪙</div>
+  </div>
+</div>
+
+<div class="screen scr2" id="invScr"><div class="wrap">
+  <h1 class="title" style="font-size:clamp(28px,5vw,46px)">คลังสกิน</h1>
+  <div class="sub">เลือกปืน แล้วแตะสกินที่มีเพื่อสวมใส่ · แตะสกินที่ยังไม่มีเพื่อดูตัวอย่างสี</div>
+  <div id="invCnt" style="color:#ffd166;font-weight:800;margin:2px 0 6px"></div>
+  <div class="invBar"><input id="invQG" type="search" placeholder="ค้นหาปืน..." autocomplete="off"><input id="invQS" type="search" placeholder="ค้นหาสกิน..." autocomplete="off"><label class="invOwn"><input type="checkbox" id="invOwn"> เฉพาะที่มี</label></div>
+  <div class="invBar" id="invRar"></div>
+  <div class="tabs hs" id="invGuns" style="max-width:min(760px,94vw)"></div>
+  <div id="invPrev"><canvas id="invPrevC" width="320" height="64"></canvas><div id="invPrevT"></div></div>
+  <div class="cards" id="invGrid"></div>
+  <button class="mbtn" id="bIB" style="min-width:120px">กลับ</button>
+</div></div>
+
+<div class="screen" id="setScr">
+  <div class="panel">
+    <h2>ตั้งค่า</h2>
+    <div class="tabs" id="tabs"></div>
+    <div id="setBody"></div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
+      <button class="sbtn" id="bSetReset">ค่าเริ่มต้น</button>
+      <button class="sbtn hl" id="bSetBack">กลับ</button>
+    </div>
+  </div>
+</div>
+
+<div id="editBar">
+  <div><b style="color:#ffd166">ปรับแต่งปุ่ม</b> — ลากเพื่อย้าย แตะเพื่อเลือก · เลือกอยู่: <b id="ebSel">-</b></div>
+  <div class="eb-row" id="ebSlots"><label>ชุดปุ่ม</label><button class="sbtn lsb" data-n="1">ชุด 1</button><button class="sbtn lsb" data-n="2">ชุด 2</button><button class="sbtn lsb" data-n="3">ชุด 3</button></div>
+  <div class="eb-row"><label>ขนาดปุ่ม</label><input type="range" id="ebSize" min="40" max="240"><span id="ebSizeV" class="val"></span></div>
+  <div class="eb-row"><label>ความทึบ</label><input type="range" id="ebOp" min="10" max="100"><span id="ebOpV" class="val"></span></div>
+  <div class="eb-row" style="justify-content:flex-end"><button class="sbtn" id="ebReset">รีเซ็ตตำแหน่ง</button><button class="sbtn hl" id="ebDone">บันทึก & ปิด</button></div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

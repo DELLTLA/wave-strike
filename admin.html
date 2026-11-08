@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEON STRIKE — แอดมิน</title><meta name="robots" content="noindex">
+<style>body{font-family:system-ui,sans-serif;background:#0a1020;color:#e8f4ff;margin:0;padding:16px}.box{max-width:560px;margin:0 auto}
+input,select,button{font-size:16px;padding:10px;border-radius:8px;border:1px solid #2bd;background:#050a18;color:#fff;margin:4px 0;box-sizing:border-box}input{width:100%}button{cursor:pointer;background:#123a55}
+.code{font-size:38px;letter-spacing:6px;font-weight:700;text-align:center;padding:12px;border-radius:12px;background:#10243a;margin:6px 0}.g{color:#ffd24a}.p{color:#ff2bd6}.m{opacity:.7;font-size:13px;text-align:center}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{border-bottom:1px solid #234;padding:5px;text-align:left}</style></head><body><div class="box">
+<h2>🔑 หน้าแอดมิน — รหัสยศปัจจุบัน</h2>
+<input id="k" type="password" placeholder="รหัสแอดมิน (ADMIN_KEY)"><button id="go">ดูรหัส</button>
+<div id="out" style="display:none">
+  <div class="m" id="meta"></div>
+  <div>GUNNER (25 บาท)</div><div class="code g" id="cg">—</div>
+  <div>PROTECTER (50 บาท)</div><div class="code p" id="cp">—</div>
+  <hr><b>ปรับยศผู้เล่นเอง</b>
+  <input id="gu" placeholder="ชื่อผู้ใช้"><select id="gr"><option value="tester">THE TESTER</option><option value="gunner">GUNNER</option><option value="protecter">PROTECTER</option></select> <button id="gb">บันทึกยศ</button>
+  <div class="m" id="gm"></div><hr><b>ผู้ใช้ล่าสุด 100 คน</b><table id="ut"></table>
+</div></div>
+<script type="module">
+import { API_URL } from './js/config.js';
+const $=id=>document.getElementById(id); let key='', timer=0, endAt=0;
+async function api(p,body){ const r=await fetch(API_URL+p,{method:body?'POST':'GET',headers:{'X-Admin-Key':key,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||r.status); return j; }
+async function load(){ try{ const c=await api('/api/admin/codes'); $('out').style.display='block'; $('cg').textContent=c.gunner; $('cp').textContent=c.protecter; endAt=Date.now()+c.endsIn; $('meta').textContent='ช่องที่ '+(c.slot+1)+'/48 · วันที่ '+c.day; tick();
+  const u=await api('/api/admin/users'); $('ut').innerHTML='<tr><th>ชื่อ</th><th>ยศ</th></tr>'+u.users.map(x=>`<tr><td>${x.username.replace(/</g,'&lt;')}</td><td>${x.rank}</td></tr>`).join(''); }catch(e){ alert(e.message); } }
+function tick(){ clearTimeout(timer); const s=Math.max(0,Math.ceil((endAt-Date.now())/1000)); $('meta').dataset.t=s; $('meta').textContent=$('meta').textContent.split(' · เปลี่ยนใน')[0]+' · เปลี่ยนใน '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); if(s<=0) return load(); timer=setTimeout(tick,1000); }
+$('go').onclick=()=>{ key=$('k').value; load(); };
+$('gb').onclick=async()=>{ try{ await api('/api/admin/grant',{username:$('gu').value.trim(),rank:$('gr').value}); $('gm').textContent='บันทึกแล้ว'; load(); }catch(e){ $('gm').textContent=e.message; } };
+</script></body></html>
