@@ -4617,7 +4617,7 @@ document.addEventListener('pointerlockerror',()=>{ noLock=true; });
 function setInputMode(touch){ if(S.touchUI===touch) return; S.touchUI=touch; document.body.classList.toggle('touch',touch); if(touch){ noLock=false; firing=false; aiming=false; } }
 addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse') setInputMode(false); else if(e.pointerType==='touch'&&isTouch) setInputMode(true); },{passive:true,capture:true});
 addEventListener('pointermove',e=>{ if(e.pointerType==='mouse'&&state!=='play') setInputMode(false); },{passive:true});
-function showScreen(id){ ['menuScr','pauseScr','overScr','setScr','wpnScr','upScr','skinScr','invScr','mapScr'].forEach(s=>$(s).classList.toggle('show',s===id)); }
+function showScreen(id){ ['menuScr','pauseScr','reviveScr','overScr','setScr','wpnScr','upScr','skinScr','invScr','mapScr'].forEach(s=>$(s).classList.toggle('show',s===id)); }
 /* ล้างเอฟเฟกต์ที่ค้างทั้งหมด: อนุภาค · วงแหวน · เส้นกระสุน · วงเตือน · ตัวเลขลอย · ตัวชี้ทิศ */
 function clearFX(){
   pLife.fill(0); pPos.fill(-999); pCol.fill(0); pGeo.attributes.position.needsUpdate=true; pGeo.attributes.color.needsUpdate=true;
@@ -4647,7 +4647,7 @@ function startGame2(){
   try{ localStorage.setItem('ns_map',selMap); }catch(e){} applyMenuTheme(selMap);
   initAudio(); if(curMap!==selMap) buildMap(selMap); setAcoustics(curMap); clearWorld(); resetUpg(); selW=selP; gunAmmo={}; curUI=1; prevUI=1; recalc(); ensureGun(selS); setWeaponModel(selW);
   dnReset(); ddReset(); hpT=0; slOn=false; AU.mp=1; AU.mr=1;
-  SKILLS.forEach(s=>s.t=0); tsT=ocT=invulnT=barrierT=0; barrierHp=0; barrierMesh.visible=false; runGold=0; swingT=0; mcT=0; mcN=0; slideT=0; slideCD=0; poundCD=0; pounding=false; airJumped=false; landA=0; camRoll=0; heavyCD=0; qmT=0; qmCD=0; lungeT=0; heavyHitT=0; mHoldPrev=false; updGold(); updSkillHUD();
+  SKILLS.forEach(s=>s.t=0); tsT=ocT=invulnT=barrierT=0; barrierHp=0; barrierMesh.visible=false; runGold=0; revives=0; rvConfirm=false; swingT=0; mcT=0; mcN=0; slideT=0; slideCD=0; poundCD=0; pounding=false; airJumped=false; landA=0; camRoll=0; heavyCD=0; qmT=0; qmCD=0; lungeT=0; heavyHitT=0; mHoldPrev=false; updGold(); updSkillHUD();
   { const sp=MAPS[curMap].spawn||{x:0,z:0,yaw:0}; Object.assign(P,{yaw:sp.yaw||0,pitch:0,hp:P.maxHp,onGround:true}); P.pos.set(sp.x||0,MAPS[curMap].spawnY,sp.z||0); if(mapStart) mapStart(); } P.vel.set(0,0,0);
   ammo=MAG; reloading=false; firing=false; aiming=false; sprintT=false; updToggles();
   fireCD=0; cycleT=0; introQ.length=0; hideScope(); burstLeft=0; semiLatch=false; shotIdx=0; idleT=0; mech('init'); updMechHUD();
@@ -4661,7 +4661,33 @@ function startGame2(){
 }
 function pause(){ if(state!=='play') return; state='pause'; chargeV=0; chargeRdy=false; beamSnd(false); flameSnd(false); firing=false; aiming=false; joy.x=joy.y=0; updToggles(); hideScope(); showScreen('pauseScr'); if(locked()) document.exitPointerLock(); }
 function resume(){ state='play'; showScreen(null); if(!S.touchUI) lockPointer(); }
+let revives=0, rvConfirm=false;
 function gameOver(){
+  state='over'; firing=false; aiming=false; hideScope(); if(locked()) document.exitPointerLock();
+  if(revives<3){ rvConfirm=false; showRevive(); vib([100,50]); return; }
+  finishOver();
+}
+function showRevive(){
+  const left=3-revives, can=gold>=100;
+  $('rvInfo').innerHTML=rvConfirm?`<b style="color:#ffd166">แน่ใจหรือไม่?</b> จะใช้ 100 🪙 เพื่อคืนชีพ (เหลือ ${left}/3 ครั้ง)`:`คืนชีพได้อีก <b>${left}/3</b> ครั้งในเกมนี้ · ทองของคุณ <b style="color:#ffd166">${gold.toLocaleString()} 🪙</b>${can?'':'<br><span style="color:#ff6b6b">ทองไม่พอ (ต้องใช้ 100 🪙)</span>'}`;
+  const b=$('bRevive'); b.textContent=rvConfirm?'✔ ยืนยัน คืนชีพ':'💖 คืนชีพ (100 🪙)'; b.disabled=!can; b.style.opacity=can?'':'0.45';
+  $('bRvNo').textContent=rvConfirm?'ยกเลิก':'ไม่คืนชีพ (จบเกม)';
+  showScreen('reviveScr');
+}
+function doRevive(){
+  if(state!=='over'||revives>=3) return;
+  if(!rvConfirm){ rvConfirm=true; showRevive(); return; }
+  if(gold<100){ rvConfirm=false; showRevive(); return; }
+  gold-=100; saveGold(); updGold(); revives++; rvConfirm=false;
+  P.hp=P.maxHp; invulnT=3; vigA=0; hurtK=0; updHP();
+  state='play'; showScreen(null); if(!S.touchUI) lockPointer();
+  banner('คืนชีพ!','ใช้ 100 🪙 · เหลือ '+(3-revives)+'/3 ครั้ง · อมตะ 3 วินาที'); sfx('pickup'); vib([40,40,80]);
+}
+function noRevive(){
+  if(rvConfirm){ rvConfirm=false; showRevive(); return; }
+  finishOver();
+}
+function finishOver(){
   state='over'; firing=false; hideScope(); if(locked()) document.exitPointerLock();
   const best=Math.max(score,+localStorage.getItem('ns_best')||0); localStorage.setItem('ns_best',best); try{ const bk='ns_best_'+curMap; localStorage.setItem(bk,Math.max(score,+localStorage.getItem(bk)||0)); }catch(e){}
   $('overStats').innerHTML=`ความยาก: <b style="color:${DIFF.col}">${DIFF.th}</b> (เงิน ×${DIFF.gold})<br>คะแนน: <b>${score.toLocaleString()}</b><br>ถึงเวฟ: <b>${wave}</b> · กำจัด: <b>${kills}</b><br>เลเวล: <b>${lvl}</b> · อาวุธ: <b>${W.name}</b><br>ทองที่เก็บได้รอบนี้: <b>+${runGold.toLocaleString()} 🪙</b><br>สถิติสูงสุด: <b>${best.toLocaleString()}</b>`;
@@ -4842,7 +4868,7 @@ function applyMenuTheme(id){
   $('menuMapTh').textContent=m.th||'';
 }
 applyMenuTheme(selMap);
-$('bStart').onclick=openMaps; $('bRetry').onclick=startGame; $('bRetryW').onclick=openMaps; $('bMapGo').onclick=openWeapons; $('bMapBack').onclick=toMenu; $('bGo').onclick=startGame; $('bWBack').onclick=toMenu;
+$('bStart').onclick=openMaps; $('bRevive').onclick=doRevive; $('bRvNo').onclick=noRevive; $('bRetry').onclick=startGame; $('bRetryW').onclick=openMaps; $('bMapGo').onclick=openWeapons; $('bMapBack').onclick=toMenu; $('bGo').onclick=startGame; $('bWBack').onclick=toMenu;
 $('bResume').onclick=resume; $('bQuit').onclick=toMenu; $('bQuit2').onclick=toMenu;
 $('bSet1').onclick=()=>openSettings('menu'); $('bSet2').onclick=()=>openSettings('pause');
 $('bEdit1').onclick=()=>openEditor('menu'); $('bEdit2').onclick=()=>openEditor('pause');
@@ -4863,14 +4889,14 @@ let PITY={a:0,b:0};
 try{ const p=JSON.parse(localStorage.getItem('ns_pity')||'null'); if(p&&typeof p==='object') PITY={a:Math.max(0,Math.min(PITY_E-1,+p.a||0)),b:Math.max(0,Math.min(PITY_L-1,+p.b||0))}; }catch(e){}
 const savePity=()=>{ try{ localStorage.setItem('ns_pity',JSON.stringify(PITY)); }catch(e){} };
 function updPity(){ const el=$('pityT'); if(el) el.innerHTML=`การันตี: มหาหายากขึ้นไปใน <b>${PITY_E-PITY.a}</b> ครั้ง · ตำนานใน <b>${PITY_L-PITY.b}</b> ครั้ง (สุ่มได้แล้ว ${SO.length-1}/${SKINS.length-1} แบบ)`; }
-function openGacha(){ if(!RK.canGacha()){ rankLockMsg('protecter'); return; } updGold(); $('reel').textContent='???'; $('reel').style.color='#7fe9ff'; $('rollRes').innerHTML=''; updRollBtn(); updPity(); showScreen('skinScr'); }
+function openGacha(){ updGold(); $('gcMsg').textContent=''; $('reel').textContent='???'; $('reel').style.color='#7fe9ff'; $('rollRes').innerHTML=''; updRollBtn(); updPity(); showScreen('skinScr'); }
 function pickSkin(minRar){   // เลือกระดับตามอัตรา 60/28/10/2 ก่อน แล้วสุ่มสม่ำเสมอในระดับนั้น (การันตีจำกัดระดับขั้นต่ำ)
   const rs=minRar==='l'?['l']:minRar==='e'?['e','l']:['c','r','e','l'];
   let tw=0; rs.forEach(k=>tw+=RAR[k].w); let rl=Math.random()*tw, rk=rs[0];
   for(const k of rs){ if((rl-=RAR[k].w)<=0){ rk=k; break; } }
   const pool=SKINS.filter(s=>!s.def&&s.r===rk); return pool[Math.random()*pool.length|0];
 }
-function rollSkin(){ if(!RK.canGacha()) return;
+function rollSkin(){ if(!RK.canGacha()){ rankLockMsg('protecter'); return; }
   if(rolling||gold<25) return;
   gold-=25; saveGold(); updGold();
   const pool=SKINS.filter(s=>!s.def);
@@ -4993,7 +5019,7 @@ function knavMove(sc,dir){
   if(best) knavSet(best);
 }
 function knavBack(sc){
-  const id=sc.id, ids={pauseScr:'bResume',overScr:'bQuit2'}; let b=ids[id]&&document.getElementById(ids[id]);
+  const id=sc.id, ids={pauseScr:'bResume',overScr:'bQuit2',reviveScr:'bRvNo'}; let b=ids[id]&&document.getElementById(ids[id]);
   if(!b) b=sc.querySelector('#bMapBack,#bWBack,#bGB,#bIB,#bSetBack,[data-a=close]');
   if(!b) b=[...sc.querySelectorAll('button')].find(x=>/^(กลับ|ปิด)/.test(x.textContent.trim()));
   if(b){ knavSet(null); b.click(); return true; } return false;
@@ -5015,4 +5041,24 @@ window.addEventListener('keydown',e=>{
 },true);
 window.addEventListener('mousedown',()=>{ if(knavEl){ knavEl.classList.remove('kfocus'); knavEl=null; } },true);
 
+/* รหัสแจกของ: เงิน + สกินที่ระบุ + สกินสุ่ม (ซ้ำ = คืนทองตามระดับ) */
+RK.setGiftHandler(j=>{
+  const parts=[]; const g=Math.max(0,Math.floor(+j.gold||0)); let gain=g;
+  if(g) parts.push('ทอง +'+g.toLocaleString()+' 🪙');
+  const got=[], dups=[];
+  const give=sk=>{ if(SO.includes(sk.id)){ gain+=RAR[sk.r].ref; dups.push(sk.n); } else { SO.push(sk.id); got.push(sk.n); } };
+  (Array.isArray(j.skins)?j.skins:[]).forEach(id=>{ const sk=SKINS.find(x=>x.id===id&&!x.def); if(sk) give(sk); });
+  for(let i=0,n=Math.min(50,+j.randomSkins||0);i<n;i++){ const sk=pickSkin(null); if(sk) give(sk); }
+  if(got.length){ try{ localStorage.setItem('ns_skins_owned',JSON.stringify(SO)); }catch(e){} parts.push('สกินใหม่: '+got.slice(0,6).join(', ')+(got.length>6?' +'+(got.length-6):'')); }
+  if(dups.length) parts.push('สกินซ้ำ '+dups.length+' ใบ คืนทองให้แล้ว');
+  if(gain){ gold+=gain; saveGold(); updGold(); }
+  try{ updPity(); }catch(e){}
+  sfx('gacha'); return 'รับของสำเร็จ! '+(parts.join(' · ')||'—');
+});
+{ const gb=$('bGift'), gi=$('gcIn'), gm=$('gcMsg'); let busy=false;
+  gb.onclick=async()=>{ if(busy) return; busy=true; gb.disabled=true; gm.style.color='#7fe9ff'; gm.textContent='กำลังตรวจสอบ...';
+    try{ gm.textContent=await RK.redeemGift(gi.value); gm.style.color='#7dff9a'; gi.value=''; updGold(); }
+    catch(e){ gm.textContent=e.message; gm.style.color='#ff6b6b'; }
+    busy=false; gb.disabled=false; };
+  gi.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); gb.click(); } }); }
 updRankBadge(); RK.initRank();
