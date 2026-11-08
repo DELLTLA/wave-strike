@@ -5,7 +5,7 @@
 input,select,button{font-size:16px;padding:10px;border-radius:8px;border:1px solid #2bd;background:#050a18;color:#fff;margin:4px 0;box-sizing:border-box}input{width:100%}button{cursor:pointer;background:#123a55}
 .code{font-size:38px;letter-spacing:6px;font-weight:700;text-align:center;padding:12px;border-radius:12px;background:#10243a;margin:6px 0}.g{color:#ffd24a}.p{color:#ff2bd6}.m{opacity:.7;font-size:13px;text-align:center}
 table{width:100%;border-collapse:collapse;font-size:14px}td,th{border-bottom:1px solid #234;padding:5px;text-align:left}</style></head><body><div class="box">
-<h2>🔑 หน้าแอดมิน — รหัสยศปัจจุบัน</h2>
+<h2>หน้าแอดมิน — รหัสยศปัจจุบัน</h2>
 <input id="k" type="password" placeholder="รหัสแอดมิน (ADMIN_KEY)"><button id="go">ดูรหัส</button>
 <div id="out" style="display:none">
   <div class="m" id="meta"></div>
@@ -13,7 +13,19 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{border-bottom:1px
   <div>PROTECTER (50 บาท)</div><div class="code p" id="cp">—</div>
   <hr><b>ปรับยศผู้เล่นเอง</b>
   <input id="gu" placeholder="ชื่อผู้ใช้"><select id="gr"><option value="tester">THE TESTER</option><option value="gunner">GUNNER</option><option value="protecter">PROTECTER</option></select> <button id="gb">บันทึกยศ</button>
-  <div class="m" id="gm"></div><hr><b>ผู้ใช้ล่าสุด 100 คน</b><table id="ut"></table>
+  <div class="m" id="gm"></div>
+  <hr><b>สร้างรหัสแจกของ (เงิน / สกิน)</b>
+  <div class="m" style="text-align:left">ผู้เล่นต้องล็อกอินแล้วกรอกรหัสในเกม (ปุ่ม 🔑 ปลดล็อคยศ → ช่องรหัสแจกของ) บัญชีละ 1 ครั้งต่อรหัส</div>
+  <input id="ggold" type="number" min="0" placeholder="เงินในเกม (0 = ไม่แจก)">
+  <select id="gskins" multiple size="7" style="width:100%"></select><div class="m" style="text-align:left">เลือกสกินที่ระบุเอง: กด Ctrl/⌘ ค้างเพื่อเลือกหลายอัน (ไม่เลือก = ไม่แจก)</div>
+  <input id="grand" type="number" min="0" max="50" placeholder="จำนวนสกินสุ่ม (0 = ไม่แจก)">
+  <input id="gmax" type="number" min="1" placeholder="ใช้ได้กี่คน (ค่าเริ่มต้น 1)">
+  <input id="gexp" type="number" min="0" placeholder="หมดอายุใน (ชั่วโมง) — เว้นว่าง = ไม่หมดอายุ">
+  <input id="gcode" placeholder="ตั้งรหัสเอง (A-Z 0-9 อย่างน้อย 4 ตัว) — เว้นว่าง = สุ่มให้" maxlength="24">
+  <input id="gnote" placeholder="โน้ตให้ตัวเอง (เช่น แจกคุณสมชาย)" maxlength="60">
+  <button id="gcb">สร้างรหัสแจกของ</button><div class="code" id="gout" style="font-size:26px;display:none"></div><div class="m" id="gmsg"></div>
+  <b>รหัสแจกของล่าสุด</b><table id="gt"></table>
+  <hr><b>ผู้ใช้ล่าสุด 100 คน</b><table id="ut"></table>
 </div></div>
 <script type="module">
 import { API_URL } from './js/config.js';
@@ -22,6 +34,12 @@ async function api(p,body){ const r=await fetch(API_URL+p,{method:body?'POST':'G
 async function load(){ try{ const c=await api('/api/admin/codes'); $('out').style.display='block'; $('cg').textContent=c.gunner; $('cp').textContent=c.protecter; endAt=Date.now()+c.endsIn; $('meta').textContent='ช่องที่ '+(c.slot+1)+'/48 · วันที่ '+c.day; tick();
   const u=await api('/api/admin/users'); $('ut').innerHTML='<tr><th>ชื่อ</th><th>ยศ</th></tr>'+u.users.map(x=>`<tr><td>${x.username.replace(/</g,'&lt;')}</td><td>${x.rank}</td></tr>`).join(''); }catch(e){ alert(e.message); } }
 function tick(){ clearTimeout(timer); const s=Math.max(0,Math.ceil((endAt-Date.now())/1000)); $('meta').dataset.t=s; $('meta').textContent=$('meta').textContent.split(' · เปลี่ยนใน')[0]+' · เปลี่ยนใน '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); if(s<=0) return load(); timer=setTimeout(tick,1000); }
-$('go').onclick=()=>{ key=$('k').value; load(); };
+
+const SK=[["carbon", "คาร์บอนดำ", "ทั่วไป"], ["storm", "สตอร์มเทา", "ทั่วไป"], ["midnight", "มิดไนท์บลู", "ทั่วไป"], ["ember", "แดงเพลิง", "ทั่วไป"], ["matrix", "กรีนเมทริกซ์", "ทั่วไป"], ["volt", "สายฟ้าเหลือง", "ทั่วไป"], ["ultra", "ม่วงอัลตร้า", "ทั่วไป"], ["titanium", "ไทเทเนียม", "ทั่วไป"], ["dune", "ทรายมรณะ", "ทั่วไป"], ["cobalt", "โคบอลต์", "ทั่วไป"], ["neonstripe", "ลายทแยงนีออน", "ทั่วไป"], ["citygrid", "กริดเมือง", "ทั่วไป"], ["rust", "สนิมไซเบอร์", "ทั่วไป"], ["punk", "ชมพูพังก์", "ทั่วไป"], ["arctic", "น้ำแข็งขั้วโลก", "หายาก"], ["viper", "ไวเปอร์", "หายาก"], ["huntercamo", "คาโมพิฆาต", "หายาก"], ["chrome", "โครเมียม", "หายาก"], ["copper", "ทองแดงโบราณ", "หายาก"], ["rainbow", "ลายสายรุ้ง", "หายาก"], ["bloodline", "บลัดไลน์", "หายาก"], ["amethyst", "อเมทิสต์", "หายาก"], ["radar", "เรดาร์กริด", "หายาก"], ["galaxy", "กาแล็กซี", "มหาหายาก"], ["dragonfire", "ดราก้อนไฟร์", "มหาหายาก"], ["ghost", "โกสต์เรดาร์", "มหาหายาก"], ["neoncity", "นีออนซิตี้", "มหาหายาก"], ["venom", "เวนอม", "มหาหายาก"], ["everglow", "เอเวอร์โกลว์", "ตำนาน"], ["stellargold", "สเตลลาร์โกลด์", "ตำนาน"], ["sandstorm", "พายุทราย", "ทั่วไป"], ["olive", "โอลีฟทหาร", "ทั่วไป"], ["slate", "หินชนวน", "ทั่วไป"], ["crimson", "ครอมสัน", "ทั่วไป"], ["mint", "มิ้นต์ฟรอสต์", "ทั่วไป"], ["plum", "ลูกพลัม", "ทั่วไป"], ["ocean", "คลื่นทะเล", "ทั่วไป"], ["graphite", "กราไฟต์", "ทั่วไป"], ["sunset", "ตะวันรอน", "ทั่วไป"], ["bubblegum", "หมากฝรั่ง", "ทั่วไป"], ["tangerine", "ส้มสด", "ทั่วไป"], ["checker", "หมากรุก", "ทั่วไป"], ["hexcell", "เฮกซ์เซลล์", "ทั่วไป"], ["circuit", "วงจรเก่า", "ทั่วไป"], ["tigerstripe", "เสือโคร่ง", "หายาก"], ["sakura", "ซากุระ", "หายาก"], ["deepsea", "ใต้ทะเลลึก", "หายาก"], ["emberglass", "แก้วถ่านไฟ", "หายาก"], ["stormcell", "เมฆพายุ", "หายาก"], ["cyberhex", "ไซเบอร์เฮกซ์", "หายาก"], ["dragonscale", "เกล็ดมังกร", "หายาก"], ["toxic", "สารพิษ", "หายาก"], ["bonewhite", "กระดูกขาว", "หายาก"], ["obsidian", "หินออบซิเดียน", "หายาก"], ["rosegold", "โรสโกลด์", "หายาก"], ["nightcircuit", "วงจรราตรี", "หายาก"], ["zebra", "ม้าลายดิจิทัล", "หายาก"], ["lava", "ลาวาไหล", "หายาก"], ["woven", "ใยคาร์บอนแดง", "หายาก"], ["aurora", "ออโรร่า", "หายาก"], ["sandglass", "นาฬิกาทราย", "หายาก"], ["glitchcore", "กลิทช์คอร์", "มหาหายาก"], ["hologram", "โฮโลแกรม", "มหาหายาก"], ["thunderlord", "จ้าวสายฟ้า", "มหาหายาก"], ["infernal", "อินเฟอร์นัล", "มหาหายาก"], ["cosmicdust", "ฝุ่นจักรวาล", "มหาหายาก"], ["reefsiren", "ไซเรนแนวปะการัง", "มหาหายาก"], ["samurai", "ซามูไรแดง", "มหาหายาก"], ["jadedragon", "มังกรหยก", "มหาหายาก"], ["neonkoi", "ปลาคาร์ฟนีออน", "มหาหายาก"], ["plasmacore", "พลาสม่าคอร์", "มหาหายาก"], ["venomfang", "เขี้ยวพิษ", "มหาหายาก"], ["ironforge", "เหล็กหลอม", "มหาหายาก"], ["phantom", "ภูตผี", "มหาหายาก"], ["solarflare", "สุริยะเพลิง", "ตำนาน"], ["voidwalker", "ผู้เดินแห่งความว่างเปล่า", "ตำนาน"], ["prismhue", "ปริซึมสายรุ้ง", "ตำนาน"], ["crystalking", "ราชาคริสตัล", "ตำนาน"], ["dragonemperor", "จักรพรรดิมังกร", "ตำนาน"], ["chronos", "โครนอส", "ตำนาน"]]; const esc=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('gskins').innerHTML=SK.map(x=>`<option value="${x[0]}">${x[1]} (${x[2]})</option>`).join('');
+async function loadGifts(){ try{ const j=await api('/api/admin/gift/list'); $('gt').innerHTML='<tr><th>รหัส</th><th>ของ</th><th>ใช้</th><th></th></tr>'+j.codes.map(c=>{ let sk=[];try{sk=JSON.parse(c.skins)}catch(e){} const items=[c.gold?'🪙'+c.gold:'',sk.length?sk.length+' สกิน':'',c.random_skins?'สุ่ม '+c.random_skins:''].filter(Boolean).join(' + '); const ex=c.expires_at&&c.expires_at<Date.now()?' (หมดอายุ)':''; return `<tr><td><b>${esc(c.code)}</b><br><span class="m">${esc(c.note)}</span></td><td>${items}${ex}</td><td>${c.uses}/${c.max_uses}</td><td><button data-del="${esc(c.code)}">ลบ</button></td></tr>`; }).join(''); }catch(e){} }
+$('gt').onclick=async e=>{ const c=e.target.dataset&&e.target.dataset.del; if(!c||!confirm('ลบรหัส '+c+' ?')) return; try{ await api('/api/admin/gift/delete',{code:c}); loadGifts(); }catch(er){ alert(er.message); } };
+$('gcb').onclick=async()=>{ try{ const j=await api('/api/admin/gift/create',{gold:$('ggold').value,skins:[...$('gskins').selectedOptions].map(o=>o.value),randomSkins:$('grand').value,maxUses:$('gmax').value||1,expireHours:$('gexp').value,code:$('gcode').value,note:$('gnote').value}); $('gout').style.display='block'; $('gout').textContent=j.code; $('gmsg').textContent='สร้างแล้ว — คัดลอกรหัสส่งให้ผู้เล่น'; loadGifts(); }catch(e){ $('gmsg').textContent=e.message; } };
+$('go').onclick=()=>{ key=$('k').value; load().then(loadGifts); };
 $('gb').onclick=async()=>{ try{ await api('/api/admin/grant',{username:$('gu').value.trim(),rank:$('gr').value}); $('gm').textContent='บันทึกแล้ว'; load(); }catch(e){ $('gm').textContent=e.message; } };
 </script></body></html>
